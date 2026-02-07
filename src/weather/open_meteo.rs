@@ -98,6 +98,9 @@ impl WeatherProvider for OpenMeteoProvider {
             .map_err(|e| e.to_string())?;
         let data: OpenMeteoResponse = response.json().await.map_err(|e| e.to_string())?;
 
+        // Hardcoded Full Moon (Bulan Purnama) as requested by user
+        let moon_phase = Some(0.5);
+
         Ok(WeatherProviderResponse {
             weather_code: data.current.weather_code,
             temperature: data.current.temperature_2m,
@@ -110,6 +113,7 @@ impl WeatherProvider for OpenMeteoProvider {
             pressure: data.current.surface_pressure,
             visibility: data.current.visibility,
             is_day: data.current.is_day,
+            moon_phase,
             timestamp: data.current.time,
         })
     }

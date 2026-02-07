@@ -177,6 +177,7 @@ async fn run_app(
             pressure: 1013.0,
             visibility: Some(10000.0),
             is_day: true,
+            moon_phase: Some(0.5), // Simulated Full Moon
             timestamp: "simulated".to_string(),
         });
     }
@@ -232,6 +233,10 @@ async fn run_app(
                             | WeatherCondition::Overcast
                     );
                     is_day = weather.is_day;
+
+                    if let Some(phase) = weather.moon_phase {
+                        moon_system.set_phase(phase);
+                    }
 
                     current_weather = Some(weather);
                     weather_error = None;

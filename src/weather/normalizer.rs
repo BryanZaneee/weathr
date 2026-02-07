@@ -19,6 +19,7 @@ impl WeatherNormalizer {
             pressure: response.pressure,
             visibility: response.visibility,
             is_day: response.is_day == 1,
+            moon_phase: response.moon_phase,
             timestamp: response.timestamp,
         }
     }
@@ -107,6 +108,7 @@ mod tests {
             pressure: 1013.0,
             visibility: Some(10000.0),
             is_day: 1,
+            moon_phase: Some(0.5),
             timestamp: "2024-01-01T12:00".to_string(),
         };
 
@@ -115,5 +117,6 @@ mod tests {
         assert_eq!(data.condition, WeatherCondition::Rain);
         assert_eq!(data.temperature, 20.5);
         assert_eq!(data.is_day, true);
+        assert_eq!(data.moon_phase, Some(0.5));
     }
 }

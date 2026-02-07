@@ -56,6 +56,7 @@ pub struct WeatherData {
     pub pressure: f64,
     pub visibility: Option<f64>,
     pub is_day: bool,
+    pub moon_phase: Option<f64>,
     pub timestamp: String,
 }
 

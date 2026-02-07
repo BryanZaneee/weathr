@@ -15,6 +15,7 @@ pub struct WeatherProviderResponse {
     pub pressure: f64,
     pub visibility: Option<f64>,
     pub is_day: i32,
+    pub moon_phase: Option<f64>,
     pub timestamp: String,
 }
 
