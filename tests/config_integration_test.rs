@@ -74,10 +74,15 @@ fn test_config_integration_missing_fields() {
 
     let mut file = fs::File::create(&test_config_path).unwrap();
     writeln!(file, "[location]").unwrap();
-    writeln!(file, "# Missing latitude and longitude - should use defaults").unwrap();
+    writeln!(
+        file,
+        "# Missing latitude and longitude - should use defaults"
+    )
+    .unwrap();
     drop(file);
 
-    let config = Config::load_from_path(&test_config_path).expect("Should use defaults for missing fields");
+    let config =
+        Config::load_from_path(&test_config_path).expect("Should use defaults for missing fields");
     assert_eq!(config.location.latitude, 52.52);
     assert_eq!(config.location.longitude, 13.41);
 

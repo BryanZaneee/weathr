@@ -43,6 +43,7 @@ pub enum PrecipitationUnit {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct WeatherData {
     pub condition: WeatherCondition,
     pub temperature: f64,
@@ -76,6 +77,7 @@ impl Default for WeatherUnits {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub struct WeatherLocation {
     pub latitude: f64,
     pub longitude: f64,

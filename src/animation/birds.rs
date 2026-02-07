@@ -40,10 +40,7 @@ impl BirdSystem {
             bird.character = if bird.flap_state { 'v' } else { '-' };
         }
 
-        // Remove off-screen birds
         self.birds.retain(|b| b.x < terminal_width as f32);
-
-        // Spawn new birds randomly if count is low
         if self.birds.len() < 3 {
             if rand::random::<f32>() < 0.01 {
                 let y = (rand::random::<u16>() % (terminal_height / 3)) as f32;

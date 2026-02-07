@@ -29,7 +29,7 @@ impl WeatherClient {
         &self,
         location: &WeatherLocation,
         units: &WeatherUnits,
-    ) -> Result<WeatherData, Box<dyn std::error::Error>> {
+    ) -> Result<WeatherData, String> {
         {
             let cache = self.cache.read().await;
             if let Some(cached) = cache.as_ref() {
@@ -39,7 +39,9 @@ impl WeatherClient {
             }
         }
 
-        let response = self.provider.fetch_current_weather(location, units).await?;
+        // Fetch fresh data
+        let response = self.provider.get_current_weather(location, units).await?;
+
         let data = WeatherNormalizer::normalize(response);
 
         {
@@ -53,11 +55,13 @@ impl WeatherClient {
         Ok(data)
     }
 
+    #[allow(dead_code)]
     pub async fn invalidate_cache(&self) {
         let mut cache = self.cache.write().await;
         *cache = None;
     }
 
+    #[allow(dead_code)]
     pub fn get_provider_name(&self) -> &'static str {
         self.provider.get_name()
     }

@@ -94,10 +94,7 @@ impl CloudSystem {
             cloud.x += cloud.speed;
         }
 
-        // Remove off-screen clouds
         self.clouds.retain(|c| c.x < terminal_width as f32);
-
-        // Spawn new clouds randomly
         if self.clouds.len() < (terminal_width / 20) as usize {
             if rand::random::<f32>() < 0.005 {
                 self.clouds.push(Self::create_random_cloud(

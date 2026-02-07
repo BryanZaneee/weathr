@@ -62,6 +62,18 @@ impl OpenMeteoProvider {
             PrecipitationUnit::Inch => "inch",
         }
     }
+
+    fn build_url(&self, location: &WeatherLocation, units: &WeatherUnits) -> String {
+        format!(
+            "{}?latitude={}&longitude={}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,visibility&temperature_unit={}&wind_speed_unit={}&precipitation_unit={}&timezone=auto",
+            self.base_url,
+            location.latitude,
+            location.longitude,
+            Self::temperature_unit_param(&units.temperature),
+            Self::wind_speed_unit_param(&units.wind_speed),
+            Self::precipitation_unit_param(&units.precipitation)
+        )
+    }
 }
 
 impl Default for OpenMeteoProvider {
@@ -72,51 +84,19 @@ impl Default for OpenMeteoProvider {
 
 #[async_trait]
 impl WeatherProvider for OpenMeteoProvider {
-    async fn fetch_current_weather(
+    async fn get_current_weather(
         &self,
         location: &WeatherLocation,
         units: &WeatherUnits,
-    ) -> Result<WeatherProviderResponse, Box<dyn std::error::Error>> {
-        let current_params = vec![
-            "temperature_2m",
-            "relative_humidity_2m",
-            "apparent_temperature",
-            "is_day",
-            "precipitation",
-            "weather_code",
-            "cloud_cover",
-            "surface_pressure",
-            "wind_speed_10m",
-            "wind_direction_10m",
-            "visibility",
-        ];
-
-        let mut url = reqwest::Url::parse(&self.base_url)?;
-        {
-            let mut query = url.query_pairs_mut();
-            query.append_pair("latitude", &location.latitude.to_string());
-            query.append_pair("longitude", &location.longitude.to_string());
-            query.append_pair("current", &current_params.join(","));
-            query.append_pair(
-                "temperature_unit",
-                Self::temperature_unit_param(&units.temperature),
-            );
-            query.append_pair(
-                "wind_speed_unit",
-                Self::wind_speed_unit_param(&units.wind_speed),
-            );
-            query.append_pair(
-                "precipitation_unit",
-                Self::precipitation_unit_param(&units.precipitation),
-            );
-
-            if let Some(elevation) = location.elevation {
-                query.append_pair("elevation", &elevation.to_string());
-            }
-        }
-
-        let response = self.client.get(url).send().await?;
-        let data: OpenMeteoResponse = response.json().await?;
+    ) -> Result<WeatherProviderResponse, String> {
+        let url = self.build_url(location, units);
+        let response = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        let data: OpenMeteoResponse = response.json().await.map_err(|e| e.to_string())?;
 
         Ok(WeatherProviderResponse {
             weather_code: data.current.weather_code,

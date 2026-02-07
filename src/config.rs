@@ -36,7 +36,7 @@ impl Default for Location {
 impl Config {
     pub fn load() -> Result<Self, String> {
         let config_path = Self::get_config_path()?;
-        
+
         if !config_path.exists() {
             eprintln!("Config file not found at {:?}", config_path);
             eprintln!("Using default location: Berlin (52.52°N, 13.41°E)");

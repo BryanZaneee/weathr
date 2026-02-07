@@ -145,6 +145,13 @@ impl TerminalRenderer {
         Ok(())
     }
 
+    pub fn flash_screen(&mut self) -> io::Result<()> {
+        for cell in &mut self.buffer {
+            cell.color = Color::White;
+        }
+        Ok(())
+    }
+
     pub fn flush(&mut self) -> io::Result<()> {
         let mut current_color = Color::Reset;
         let mut last_pos: Option<(u16, u16)> = None;

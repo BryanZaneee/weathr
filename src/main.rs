@@ -5,8 +5,14 @@ mod render;
 mod weather;
 
 use animation::{
-    birds::BirdSystem, clouds::CloudSystem, raindrops::RaindropSystem, sunny::SunnyAnimation,
-    thunderstorm::ThunderstormSystem, AnimationController,
+    birds::BirdSystem,
+    clouds::CloudSystem,
+    moon::MoonSystem,
+    raindrops::{RainIntensity, RaindropSystem},
+    stars::StarSystem,
+    sunny::SunnyAnimation,
+    thunderstorm::ThunderstormSystem,
+    AnimationController,
 };
 use clap::Parser;
 use config::Config;
@@ -92,11 +98,16 @@ async fn run_app(
     let mut is_raining = false;
     let mut is_thunderstorm = false;
     let mut is_cloudy = false;
+    let mut is_day = true;
+
     let (term_width, term_height) = renderer.get_size();
-    let mut raindrop_system = RaindropSystem::new(term_width, term_height);
+    // Default intensity, will update loop
+    let mut raindrop_system = RaindropSystem::new(term_width, term_height, RainIntensity::Light);
     let mut thunderstorm_system = ThunderstormSystem::new(term_width, term_height);
     let mut cloud_system = CloudSystem::new(term_width, term_height);
     let mut bird_system = BirdSystem::new(term_width, term_height);
+    let mut star_system = StarSystem::new(term_width, term_height);
+    let mut moon_system = MoonSystem::new(term_width, term_height);
 
     if let Some(ref condition_str) = simulate_condition {
         let simulated_condition = parse_weather_condition(condition_str);
@@ -112,10 +123,25 @@ async fn run_app(
                     | WeatherCondition::RainShowers
                     | WeatherCondition::FreezingRain
             );
+
+        let rain_intensity = match simulated_condition {
+            WeatherCondition::Drizzle => RainIntensity::Drizzle,
+            WeatherCondition::Rain | WeatherCondition::RainShowers => RainIntensity::Light,
+            WeatherCondition::FreezingRain => RainIntensity::Heavy, // Treat freezing rain as heavy visually? Or just normal
+            WeatherCondition::Thunderstorm => RainIntensity::Heavy,
+            WeatherCondition::ThunderstormHail => RainIntensity::Storm,
+            _ => RainIntensity::Light,
+        };
+        raindrop_system.set_intensity(rain_intensity);
+
         is_cloudy = matches!(
             simulated_condition,
             WeatherCondition::PartlyCloudy | WeatherCondition::Cloudy | WeatherCondition::Overcast
         );
+
+        // Default simulated day is true unless specified otherwise (not implementing time sim yet)
+        is_day = true;
+
         current_weather = Some(WeatherData {
             condition: simulated_condition,
             temperature: 20.0,
@@ -157,10 +183,27 @@ async fn run_app(
                                 | WeatherCondition::RainShowers
                                 | WeatherCondition::FreezingRain
                         );
+
+                    let rain_intensity = match weather.condition {
+                        WeatherCondition::Drizzle => RainIntensity::Drizzle,
+                        WeatherCondition::Rain | WeatherCondition::RainShowers => {
+                            RainIntensity::Light
+                        }
+                        WeatherCondition::FreezingRain => RainIntensity::Heavy,
+                        WeatherCondition::Thunderstorm => RainIntensity::Heavy,
+                        WeatherCondition::ThunderstormHail => RainIntensity::Storm,
+                        _ => RainIntensity::Light,
+                    };
+                    raindrop_system.set_intensity(rain_intensity);
+
                     is_cloudy = matches!(
                         weather.condition,
-                        WeatherCondition::PartlyCloudy | WeatherCondition::Cloudy | WeatherCondition::Overcast
+                        WeatherCondition::PartlyCloudy
+                            | WeatherCondition::Cloudy
+                            | WeatherCondition::Overcast
                     );
+                    is_day = weather.is_day;
+
                     current_weather = Some(weather);
                     weather_error = None;
                 }
@@ -216,6 +259,14 @@ async fn run_app(
 
         renderer.render_line_colored(2, 1, &weather_info, crossterm::style::Color::Cyan)?;
 
+        // Background: Night Sky
+        if !is_day {
+            star_system.update(term_width, term_height);
+            star_system.render(renderer)?;
+            moon_system.update(term_width, term_height);
+            moon_system.render(renderer)?;
+        }
+
         // Render background animations first
         if is_cloudy || (!is_raining && !is_thunderstorm) {
             // Show clouds on cloudy days or sunny days (maybe fewer on sunny days?)
@@ -228,18 +279,25 @@ async fn run_app(
                 cloud_system.render(renderer)?;
             }
 
-            // Birds only when not raining/storming
-            if !is_raining && !is_thunderstorm {
+            // Birds only when not raining/storming and DAYTIME
+            if !is_raining && !is_thunderstorm && is_day {
                 bird_system.update(term_width, term_height);
                 bird_system.render(renderer)?;
             }
         }
 
-        // Render sun (background) - Show if clear or partly cloudy
-        let show_sun = if let Some(ref weather) = current_weather {
-            matches!(weather.condition, WeatherCondition::Clear | WeatherCondition::PartlyCloudy)
+        // Render sun (background) - Show if clear or partly cloudy AND Day
+        let show_sun = if is_day {
+            if let Some(ref weather) = current_weather {
+                matches!(
+                    weather.condition,
+                    WeatherCondition::Clear | WeatherCondition::PartlyCloudy
+                )
+            } else {
+                !is_raining && !is_thunderstorm && !is_cloudy
+            }
         } else {
-            !is_raining && !is_thunderstorm && !is_cloudy
+            false
         };
 
         if show_sun && !is_raining && !is_thunderstorm {
@@ -253,9 +311,20 @@ async fn run_app(
         renderer.render_centered(&house_strings, house_y)?;
 
         // Render foreground (rain/thunder)
+        // Thunderstorm includes rain + lightning
         if is_thunderstorm {
+            // Update and render rain first
+            raindrop_system.update(term_width, term_height);
+            raindrop_system.render(renderer)?;
+
+            // Then lightning
             thunderstorm_system.update(term_width, term_height);
             thunderstorm_system.render(renderer)?;
+
+            // Check for flash
+            if thunderstorm_system.is_flashing() {
+                renderer.flash_screen()?;
+            }
         } else if is_raining {
             raindrop_system.update(term_width, term_height);
             raindrop_system.render(renderer)?;

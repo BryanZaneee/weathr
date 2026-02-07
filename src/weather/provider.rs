@@ -20,11 +20,12 @@ pub struct WeatherProviderResponse {
 
 #[async_trait]
 pub trait WeatherProvider: Send + Sync {
-    async fn fetch_current_weather(
+    async fn get_current_weather(
         &self,
         location: &WeatherLocation,
         units: &WeatherUnits,
-    ) -> Result<WeatherProviderResponse, Box<dyn std::error::Error>>;
+    ) -> Result<WeatherProviderResponse, String>;
 
+    #[allow(dead_code)]
     fn get_name(&self) -> &'static str;
 }
