@@ -1,4 +1,6 @@
-use weathr::weather::{WeatherCondition, WeatherNormalizer, WeatherProviderResponse};
+use weathr::weather::normalizer::WeatherNormalizer;
+use weathr::weather::provider::WeatherProviderResponse;
+use weathr::weather::WeatherCondition;
 
 #[test]
 fn test_weather_normalizer_integration_all_wmo_codes() {
