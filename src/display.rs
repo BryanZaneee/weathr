@@ -1,3 +1,6 @@
+// weathr - Terminal-based ASCII weather application
+// Copyright (C) 2026 Dony Mulya
+
 use crossterm::{
     cursor, execute, queue,
     style::{Color, Print, ResetColor, SetForegroundColor},
