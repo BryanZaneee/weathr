@@ -6,7 +6,7 @@ mod scene;
 mod weather;
 
 use animation::{
-    birds::BirdSystem, clouds::CloudSystem, moon::MoonSystem, raindrops::RaindropSystem,
+    birds::BirdSystem, chimney::ChimneySmoke, clouds::CloudSystem, moon::MoonSystem, raindrops::RaindropSystem,
     snow::SnowSystem, stars::StarSystem, sunny::SunnyAnimation, thunderstorm::ThunderstormSystem,
     AnimationController,
 };
@@ -131,6 +131,7 @@ async fn run_app(
     let mut bird_system = BirdSystem::new(term_width, term_height);
     let mut star_system = StarSystem::new(term_width, term_height);
     let mut moon_system = MoonSystem::new(term_width, term_height);
+    let mut chimney_smoke = ChimneySmoke::new();
 
     if let Some(ref condition_str) = simulate_condition {
         let simulated_condition = parse_weather_condition(condition_str);
@@ -281,6 +282,20 @@ async fn run_app(
 
         // Render World Scene (House, Ground, Decorations)
         world_scene.render(renderer)?;
+
+        // Render chimney smoke (turn off when raining/thunderstorm)
+        if !is_raining && !is_thunderstorm {
+            let ground_height = 8;
+            let horizon_y = term_height.saturating_sub(ground_height);
+            let house_width = 64;
+            let house_height = 13;
+            let house_x = (term_width / 2).saturating_sub(house_width / 2);
+            let house_y = horizon_y.saturating_sub(house_height);
+            let chimney_x = house_x + 10;
+            let chimney_y = house_y;
+            chimney_smoke.update(chimney_x, chimney_y);
+            chimney_smoke.render(renderer)?;
+        }
 
         // Render foreground (rain/thunder)
         // Thunderstorm includes rain + lightning
