@@ -1,4 +1,5 @@
 pub mod client;
+pub mod location;
 pub mod normalizer;
 pub mod open_meteo;
 pub mod provider;

@@ -2,18 +2,22 @@ use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug, Default, Clone)]
 pub struct Config {
     #[serde(default)]
     pub location: Location,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Location {
     #[serde(default = "default_latitude")]
     pub latitude: f64,
     #[serde(default = "default_longitude")]
     pub longitude: f64,
+    #[serde(default)]
+    pub auto: bool,
+    #[serde(default)]
+    pub hide: bool,
 }
 
 fn default_latitude() -> f64 {
@@ -29,6 +33,8 @@ impl Default for Location {
         Self {
             latitude: default_latitude(),
             longitude: default_longitude(),
+            auto: false,
+            hide: false,
         }
     }
 }
@@ -216,6 +222,8 @@ longitude = 0.0
             location: Location {
                 latitude: 91.0,
                 longitude: 0.0,
+                auto: false,
+                hide: false,
             },
         };
         let result = config.validate();
@@ -229,6 +237,8 @@ longitude = 0.0
             location: Location {
                 latitude: -91.0,
                 longitude: 0.0,
+                auto: false,
+                hide: false,
             },
         };
         let result = config.validate();
@@ -242,6 +252,8 @@ longitude = 0.0
             location: Location {
                 latitude: 0.0,
                 longitude: 181.0,
+                auto: false,
+                hide: false,
             },
         };
         let result = config.validate();
@@ -255,6 +267,8 @@ longitude = 0.0
             location: Location {
                 latitude: 0.0,
                 longitude: -181.0,
+                auto: false,
+                hide: false,
             },
         };
         let result = config.validate();
@@ -268,6 +282,8 @@ longitude = 0.0
             location: Location {
                 latitude: 52.52,
                 longitude: 13.41,
+                auto: false,
+                hide: false,
             },
         };
         assert!(config.validate().is_ok());

@@ -9,10 +9,11 @@ pub struct AppState {
     pub cached_weather_info: String,
     pub weather_info_needs_update: bool,
     pub location: WeatherLocation,
+    pub hide_location: bool,
 }
 
 impl AppState {
-    pub fn new(location: WeatherLocation) -> Self {
+    pub fn new(location: WeatherLocation, hide_location: bool) -> Self {
         Self {
             current_weather: None,
             weather_error: None,
@@ -21,6 +22,7 @@ impl AppState {
             cached_weather_info: String::new(),
             weather_info_needs_update: true,
             location,
+            hide_location,
         }
     }
 
@@ -77,25 +79,29 @@ impl AppState {
             return;
         }
 
-        self.cached_weather_info = if let Some(ref error) = self.weather_error {
+        let location_str = if self.hide_location {
+            "Location: Hidden".to_string()
+        } else {
             format!(
-                "{} | Location: {:.2}°N, {:.2}°E | Press 'q' to quit",
-                error, self.location.latitude, self.location.longitude
+                "Location: {:.2}°N, {:.2}°E",
+                self.location.latitude, self.location.longitude
             )
+        };
+
+        self.cached_weather_info = if let Some(ref error) = self.weather_error {
+            format!("{} | {} | Press 'q' to quit", error, location_str)
         } else if let Some(ref weather) = self.current_weather {
             format!(
-                "Weather: {} | Temp: {:.1}°C | Location: {:.2}°N, {:.2}°E | Press 'q' to quit",
+                "Weather: {} | Temp: {:.1}°C | {} | Press 'q' to quit",
                 self.get_condition_text(),
                 weather.temperature,
-                self.location.latitude,
-                self.location.longitude
+                location_str
             )
         } else {
             format!(
-                "Weather: Loading... {} | Location: {:.2}°N, {:.2}°E | Press 'q' to quit",
+                "Weather: Loading... {} | {} | Press 'q' to quit",
                 self.loading_state.current_char(),
-                self.location.latitude,
-                self.location.longitude
+                location_str
             )
         };
 

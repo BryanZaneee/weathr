@@ -32,13 +32,19 @@ struct Cli {
 
     #[arg(short, long, help = "Enable falling autumn leaves")]
     leaves: bool,
+
+    #[arg(long, help = "Auto-detect location via IP")]
+    auto_location: bool,
+
+    #[arg(long, help = "Hide location coordinates in UI")]
+    hide_location: bool,
 }
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let cli = Cli::parse();
 
-    let config = match Config::load() {
+    let mut config = match Config::load() {
         Ok(config) => config,
         Err(e) => {
             eprintln!("Error loading config: {}", e);
@@ -54,6 +60,30 @@ async fn main() -> io::Result<()> {
             Config::default()
         }
     };
+
+    // CLI Overrides
+    if cli.auto_location {
+        config.location.auto = true;
+    }
+    if cli.hide_location {
+        config.location.hide = true;
+    }
+
+    // Auto-detect location if enabled
+    if config.location.auto {
+        println!("Auto-detecting location...");
+        match weather::location::get_location_from_ip().await {
+            Ok((lat, lon)) => {
+                println!("Location detected: {:.4}, {:.4}", lat, lon);
+                config.location.latitude = lat;
+                config.location.longitude = lon;
+            }
+            Err(e) => {
+                eprintln!("Failed to auto-detect location: {}", e);
+                eprintln!("Using configured/default location.");
+            }
+        }
+    }
 
     let mut renderer = TerminalRenderer::new()?;
     renderer.init()?;
