@@ -1,3 +1,6 @@
+mod capabilities;
+
+use capabilities::TerminalCapabilities;
 use crossterm::{
     cursor, execute, queue,
     style::{Color, Print, ResetColor, SetForegroundColor},
@@ -26,6 +29,7 @@ pub struct TerminalRenderer {
     height: u16,
     buffer: Vec<Cell>,
     last_buffer: Vec<Cell>,
+    capabilities: TerminalCapabilities,
 }
 
 impl TerminalRenderer {
@@ -33,6 +37,7 @@ impl TerminalRenderer {
         let (width, height) = terminal::size()?;
         let stdout = io::stdout();
         let buffer_size = (width as usize) * (height as usize);
+        let capabilities = TerminalCapabilities::detect();
 
         Ok(Self {
             stdout,
@@ -40,6 +45,7 @@ impl TerminalRenderer {
             height,
             buffer: vec![Cell::default(); buffer_size],
             last_buffer: vec![Cell::default(); buffer_size],
+            capabilities,
         })
     }
 
@@ -88,6 +94,7 @@ impl TerminalRenderer {
         } else {
             0
         };
+        let adjusted_color = self.capabilities.adjust_color(color);
 
         for (idx, line) in lines.iter().enumerate() {
             let row = start_row + idx as u16;
@@ -99,7 +106,7 @@ impl TerminalRenderer {
                         if buffer_idx < self.buffer.len() {
                             self.buffer[buffer_idx] = Cell {
                                 character: ch,
-                                color,
+                                color: adjusted_color,
                             };
                         }
                     }
@@ -120,6 +127,7 @@ impl TerminalRenderer {
         if y >= self.height {
             return Ok(());
         }
+        let adjusted_color = self.capabilities.adjust_color(color);
 
         for (idx, ch) in text.chars().enumerate() {
             let col = x + idx as u16;
@@ -128,7 +136,7 @@ impl TerminalRenderer {
                 if buffer_idx < self.buffer.len() {
                     self.buffer[buffer_idx] = Cell {
                         character: ch,
-                        color,
+                        color: adjusted_color,
                     };
                 }
             }
@@ -142,7 +150,7 @@ impl TerminalRenderer {
             if buffer_idx < self.buffer.len() {
                 self.buffer[buffer_idx] = Cell {
                     character: ch,
-                    color,
+                    color: self.capabilities.adjust_color(color),
                 };
             }
         }
@@ -150,8 +158,9 @@ impl TerminalRenderer {
     }
 
     pub fn flash_screen(&mut self) -> io::Result<()> {
+        let flash_color = self.capabilities.adjust_color(Color::White);
         for cell in &mut self.buffer {
-            cell.color = Color::White;
+            cell.color = flash_color;
         }
         Ok(())
     }
