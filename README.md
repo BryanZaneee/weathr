@@ -11,7 +11,13 @@ A terminal weather app with ASCII animations.
 
 ## Installation
 
-### Build
+### Via Cargo
+
+```bash
+cargo install weathr
+```
+
+### Build from Source
 
 You need Rust installed.
 
