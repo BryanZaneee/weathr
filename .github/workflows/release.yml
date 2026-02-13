@@ -53,11 +53,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install cross
-        if: matrix.use_cross
+        if: matrix.use_cross == true
         run: cargo install cross --git https://github.com/cross-rs/cross
 
-      - name: Build
-        run: ${{ matrix.use_cross && 'cross' || 'cargo' }} build --release --target ${{ matrix.target }}
+      - name: Build (with cross)
+        if: matrix.use_cross == true
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Build (with cargo)
+        if: matrix.use_cross != true
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Prepare Asset
         shell: bash
