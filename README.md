@@ -66,6 +66,9 @@ Edit the config file at the appropriate path for your platform:
 # Hide the HUD (Heads Up Display) with weather details
 hide_hud = false
 
+# Run silently without startup messages (errors still shown)
+silent = false
+
 [location]
 # Location coordinates (overridden if auto = true)
 latitude = 40.7128
@@ -147,6 +150,9 @@ weathr --hide-location
 
 # Hide status HUD
 weathr --hide-hud
+
+# Run silently (suppress non-error output)
+weathr --silent
 
 # Combine flags
 weathr --imperial --auto-location
