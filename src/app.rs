@@ -10,7 +10,7 @@ use crate::weather::{
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::io;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(300);
@@ -69,6 +69,7 @@ pub struct App {
     weather_units: WeatherUnits,
     weather_provider: Option<Arc<OpenMeteoProvider>>,
     refreshing: bool,
+    speed_changed_at: Option<Instant>,
 }
 
 impl App {
@@ -174,6 +175,7 @@ impl App {
             weather_units: config.units,
             weather_provider,
             refreshing: false,
+            speed_changed_at: None,
         }
     }
 
@@ -225,11 +227,10 @@ impl App {
                 }
             }
 
-            renderer.clear()?;
-
             let (term_width, term_height) = renderer.get_size();
 
             if !self.paused {
+                renderer.clear()?;
                 self.animations.render_background(
                     renderer,
                     &self.state.weather_conditions,
@@ -294,6 +295,20 @@ impl App {
                 )?;
             }
 
+            if let Some(changed_at) = self.speed_changed_at {
+                if changed_at.elapsed() < Duration::from_secs(2) {
+                    let speed_text = format!("Speed: {}x", self.speed_multiplier);
+                    renderer.render_line_colored(
+                        2,
+                        2,
+                        &speed_text,
+                        crossterm::style::Color::Yellow,
+                    )?;
+                } else {
+                    self.speed_changed_at = None;
+                }
+            }
+
             let attribution = "Weather data by Open-Meteo.com";
             let attribution_x = if term_width > attribution.len() as u16 {
                 term_width - attribution.len() as u16 - 2
@@ -328,9 +343,11 @@ impl App {
                         KeyCode::Char('+') | KeyCode::Char('=') => {
                             // 0.25 floor prevents invisible animations, 4.0 ceiling prevents unusable speed
                             self.speed_multiplier = (self.speed_multiplier + 0.25).clamp(0.25, 4.0);
+                            self.speed_changed_at = Some(Instant::now());
                         }
                         KeyCode::Char('-') => {
                             self.speed_multiplier = (self.speed_multiplier - 0.25).clamp(0.25, 4.0);
+                            self.speed_changed_at = Some(Instant::now());
                         }
                         KeyCode::Char('h') => {
                             self.hide_hud = !self.hide_hud;
